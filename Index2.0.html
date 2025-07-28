@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Who Wants to Be a Millionaire – Kids Edition</title>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/game-background.jpg') no-repeat center center;
+      background-size: cover;
+      color: white;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 1100px;
+      height: 700px;
+      display: flex;
+      background: rgba(0,0,0,0.7);
+      border-radius: 15px;
+      box-shadow: 0 0 20px #000;
+      overflow: hidden;
+    }
+
+    /* Prize ladder styling */
+    #prize-ladder {
+      width: 250px;
+      background: #111a33;
+      border-left: 5px solid orange;
+      padding: 15px 10px;
+      box-sizing: border-box;
+      color: #fff;
+      font-weight: bold;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-y: auto;
+      user-select: none;
+    }
+    #prize-ladder h2 {
+      text-align: center;
+      color: orange;
+      margin: 10px 0 20px 0;
+      font-size: 24px;
+      letter-spacing: 2px;
+    }
+    #prize-ladder ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 18px;
+    }
+    #prize-ladder ul li {
+      padding: 8px 10px;
+      margin: 4px 0;
+      border-radius: 5px;
+      background: #223355;
+      transition: background 0.3s, color 0.3s;
+      display: flex;
+      justify-content: space-between;
+    }
+    #prize-ladder ul li.current {
+      background: orange;
+      color: black;
+      font-weight: bold;
+      font-size: 20px;
+      box-shadow: 0 0 10px orange;
+    }
+    #prize-ladder ul li.guaranteed {
+      border-left: 5px solid #00cc00;
+    }
+
+    /* Left game area */
+    #left-area {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 40px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    #bottom-left-image {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 320px;
+      height: auto;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    .lifelines {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 15px;
+      z-index: 999;
+    }
+
+    .lifeline-btn {
+      background: #3296ff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 18px;
+      color: black;
+      cursor: pointer;
+      user-select: none;
+      flex-grow: 1;
+      max-width: 180px;
+      transition: background 0.3s;
+    }
+
+    .lifeline-btn.used {
+      background: #888;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    #play-area {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    
+
+    .question-box {
+      background: rgba(0, 50, 255, 0.9);
+      border: 4px solid orange;
+      padding: 20px;
+      font-size: 24px;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+      min-height: 100px;
+      border-radius: 10px;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .answer-btn {
+      background: #3296ff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 20px;
+      color: black;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s;
+    }
+
+    .answer-btn.disabled {
+      background: #ccc;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .answer-btn:hover:not(.disabled) {
+      background: yellow;
+    }
+
+    .feedback, .phone-hint, .audience-hint {
+      font-size: 28px;
+      padding: 10px;
+      margin-top: 20px;
+      background: white;
+      color: black;
+      border-radius: 8px;
+      display: none;
+      min-height: 40px;
+    }
+
+    .feedback.correct { color: #00c000; }
+    .feedback.wrong { color: #c00000; }
+
+    #start-screen, #end-screen {
+      
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 700px;
+      text-align: center;
+      user-select: none;
+    }
+
+    #prize-display {
+      font-size: 22px;
+      color: yellow;
+      margin-top: 10px;
+      font-weight: bold;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <img id="bottom-left-image" src="images/Gemini_Generated_Image_gj5gt3gj5gt3gj5g-removebg-preview.png" alt="Mascot" />
+
+  <div id="game-container">
+    <div id="left-area">
+      <div id="start-screen">
+        <h1 style="font-size:48px;color:orange;">Who Wants to Be a Millionaire!</h1>
+        <p style="font-size:28px;color:red;">Click anywhere to start</p>
+      </div>
+
+      <div id="play-screen" style="display:none;">
+        <div class="lifelines">
+          <button id="lifeline-5050" class="lifeline-btn">50:50</button>
+          <button id="lifeline-phone" class="lifeline-btn">Phone a Friend</button>
+          <button id="lifeline-audience" class="lifeline-btn">Ask the Audience</button>
+        </div>
+
+        <div id="play-area">
+          <div class="question-box" id="question-box"></div>
+          <div class="answers" id="answers"></div>
+          <div class="phone-hint" id="phone-hint"></div>
+          <div class="audience-hint" id="audience-hint"></div>
+          <div class="feedback" id="feedback"></div>
+          <div id="prize-display"></div>
+        </div>
+      </div>
+
+      <div id="end-screen" style="display:none;">
+        <h1 class="feedback correct" id="end-text"></h1>
+        <p style="font-size:28px;color:orange;">Try again  👉👈</p>
+      </div>
+    </div>
+
+    <div id="prize-ladder">
+      <h2>Prize Ladder</h2>
+      <ul id="prize-list">
+        <!-- Prizes inserted by JS -->
+      </ul>
+    </div>
+  </div>
+
+<script>
+  const questions = [
+    {question: "Σε ποια χώρα γεννήθηκε το σύγχρονο ποδόσφαιρο;", choices: ["Αγγλία", "Σκωτία", "Βραζιλία", "Γερμανία"], answer: "A"},
+    {question: "Ποιο είναι το μεγαλύτερο νησί της Ελλάδας;", choices: ["Κρήτη", "Ρόδος", "Εύβοια", "Κέρκυρα"], answer: "A"},
+    {question: "Ποιος είναι ο συγγραφέας του έργου 'Οδύσσεια';", choices: ["Όμηρος", "Σοφοκλής", "Ησίοδος", "Αριστοτέλης"], answer: "A"},
+    {question: "Ποιος ανακάλυψε τη βαρύτητα;", choices: ["Νεύτων", "Γαλιλαίος", "Κοπέρνικος", "Αϊνστάιν"], answer: "A"},
+    {question: "Ποιος ζωγράφος είναι διάσημος για το έργο 'Τα Ηλιοτρόπια';", choices: ["Πικάσο", "Βαν Γκογκ", "Μονέ", "Λεονάρντο ντα Βίντσι"], answer: "B"},
+    {question: "Ποιος αρχαίος Έλληνας φιλόσοφος ήταν δάσκαλος του Αριστοτέλη;", choices: ["Πλάτων", "Σωκράτης", "Πυθαγόρας", "Αρχιμίδης"], answer: "A"},
+    {question: "Ποιο είναι το ψηλότερο βουνό της Ευρώπης;", choices: ["Μοντ Μπλαν", "Όρος Ελμπρους", "Όλυμπος", "Άλπεις"], answer: "B"},
+    {question: "Ποιο είναι το βασικό συστατικό του φυσικού αερίου;", choices: ["Μεθάνιο", "Προπάνιο", "Βουτάνιο", "Αιθάνιο"], answer: "A"},
+    {question: "Ποιο στοιχείο έχει τον μεγαλύτερο ατομικό αριθμό που έχει παρατηρηθεί στη φύση;", choices: ["Ουράνιο", "Πλουτώνιο", "Θόριο", "Ραδόνιο"], answer: "A"},
+    {question: "Ποια είναι η μεγαλύτερη σε έκταση έρημος του κόσμου;", choices: ["Σαχάρα", "Αραβική", "Ανταρκτική", "Γκόμπι"], answer: "C"},
+    {question: "Ποιο ποτάμι χωρίζει τη Γαλλία από τη Γερμανία;", choices: ["Ρήνος", "Δούναβης", "Σηκουάνας", "Ροδανός"], answer: "A"},
+    {question: "Ποιο είναι το μεγαλύτερο νησί στον κόσμο μετά τη Γροιλανδία;", choices: ["Νέα Γουινέα", "Ισλανδία", "Μαδαγασκάρη", "Βρετανία"], answer: "A"},
+    {question: "Ποια πόλη είναι η πρωτεύουσα της Νιγηρίας;", choices: ["Λάγκος", "Αμπούτζα", "Κάνο", "Πορτ Χάρκορτ"], answer: "B"},
+    {question: "Ποια χώρα έχει τον μεγαλύτερο πληθυσμό μουσουλμάνων στον κόσμο;", choices: ["Σαουδική Αραβία", "Τουρκία", "Ινδονησία", "Πακιστάν"], answer: "C"},
+    {question: "Ποιος από τους αστροναύτες της Apollo 11 δεν πάτησε ποτέ στη Σελήνη;", choices: ["Μάικλ Κόλινς", "Νηλ Άρμστρονγκ", "Μπαζ Όλντριν", "Τζιμ Λόβελ"], answer: "A"}
+  ];
+
+
+
+
+  const prizes = [
+    "€100", "€200", "€300", "€500", "€1,000",
+    "€2,000", "€4,000", "€8,000", "€16,000", "€32,000",
+    "€64,000", "€125,000", "€250,000", "€500,000", "€1,000,000"
+  ];
+
+  let current = 0;
+  let used5050 = false;
+  let usedPhone = false;
+  let usedAudience = false;
+
+  const startScreen = document.getElementById('start-screen');
+  const playScreen = document.getElementById('play-screen');
+  const endScreen = document.getElementById('end-screen');
+
+  const questionBox = document.getElementById('question-box');
+  const answersDiv = document.getElementById('answers');
+  const phoneHintDiv = document.getElementById('phone-hint');
+  const audienceHintDiv = document.getElementById('audience-hint');
+  const feedbackDiv = document.getElementById('feedback');
+  const prizeDisplay = document.getElementById('prize-display');
+
+  const lifeline5050Btn = document.getElementById('lifeline-5050');
+  const lifelinePhoneBtn = document.getElementById('lifeline-phone');
+  const lifelineAudienceBtn = document.getElementById('lifeline-audience');
+
+  const prizeList = document.getElementById('prize-list');
+
+  // Render prize ladder list once at start
+  function initPrizeLadder() {
+    prizeList.innerHTML = '';
+    for(let i = prizes.length -1; i >=0; i--) {
+      const li = document.createElement('li');
+      li.textContent = `${i + 1}. ${prizes[i]}`;
+      // Mark guaranteed levels (for example 5th and 10th)
+      if(i === 4 || i === 9) {
+        li.classList.add('guaranteed');
+      }
+      prizeList.appendChild(li);
+    }
+  }
+
+  function highlightCurrentPrize() {
+    const items = prizeList.querySelectorAll('li');
+    items.forEach((item, index) => {
+      // prizeList is descending order, so invert index
+      const prizeIndex = prizes.length - 1 - index;
+      if(prizeIndex === current) {
+        item.classList.add('current');
+      } else {
+        item.classList.remove('current');
+      }
+    });
+  }
+
+  function renderQuestion() {
+    const q = questions[current];
+    questionBox.textContent = q.question;
+    prizeDisplay.textContent = "Current Prize: " + prizes[current];
+    answersDiv.innerHTML = '';
+    ['A','B','C','D'].forEach((letter,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'answer-btn';
+      btn.textContent = `${letter}: ${q.choices[i]}`;
+      btn.dataset.letter = letter;
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+      btn.onclick = () => selectAnswer(btn);
+      answersDiv.appendChild(btn);
+    });
+    phoneHintDiv.style.display = 'none';
+    phoneHintDiv.textContent = '';
+    audienceHintDiv.style.display = 'none';
+    audienceHintDiv.textContent = '';
+    feedbackDiv.style.display = 'none';
+    feedbackDiv.textContent = '';
+
+    highlightCurrentPrize();
+  }
+
+  function selectAnswer(button) {
+    if(button.disabled) return;
+    const selected = button.dataset.letter;
+    const correct = questions[current].answer;
+
+    // Disable all buttons to prevent double click
+    [...answersDiv.children].forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+
+        // Highlight correct answer green
+        if(btn.dataset.letter === correct) {
+        btn.style.backgroundColor = '#00c000'; // green
+        btn.style.color = 'white';
+        }
+    });
+
+    // Highlight the pressed button red if wrong and it is not correct
+    if(selected !== correct) {
+        button.style.backgroundColor = '#c00000'; // red
+        button.style.color = 'white';
+    }
+
+    if(selected === correct) {
+        feedbackDiv.textContent = "Correct! 🎉";
+        feedbackDiv.className = "feedback correct";
+        feedbackDiv.style.display = 'block';
+        current++;
+        if(current === questions.length) {
+        setTimeout(() => endGame(true), 2000);
+        } else {
+        setTimeout(renderQuestion, 2000);
+        }
+    } else {
+        feedbackDiv.textContent = `Wrong! Correct answer was ${correct}.`;
+        feedbackDiv.className = "feedback wrong";
+        feedbackDiv.style.display = 'block';
+        setTimeout(() => endGame(false), 2000);
+    }
+    }
+
+
+  function endGame(won) {
+    playScreen.style.display = 'none';
+    endScreen.style.display = 'block';
+    const endText = document.getElementById('end-text');
+    if(won) {
+      endText.textContent = `Congratulations! You won ${prizes[prizes.length-1]}!`;
+    } else {
+      let prizeWon = "€0";
+      if(current > 0) {
+        // Guarantee if reached 5th or 10th question
+        if(current > 9) prizeWon = prizes[9];
+        else if(current > 4) prizeWon = prizes[4];
+      }
+      endText.textContent = `Game Over! You won ${prizeWon}.`;
+    }
+  }
+
+  function resetGame(){
+    current=0;
+    used5050=usedPhone=usedAudience=false;
+    lifeline5050Btn.classList.remove('used');
+    lifelinePhoneBtn.classList.remove('used');
+    lifelineAudienceBtn.classList.remove('used');
+    endScreen.style.display = 'none';
+    playScreen.style.display = 'block';
+    renderQuestion();
+  }
+
+  // Lifelines
+
+  lifeline5050Btn.onclick = () => {
+    if(used5050) return;
+    used5050 = true;
+    lifeline5050Btn.classList.add('used');
+    // Remove two wrong answers from current question
+    const correct = questions[current].answer;
+    let removed = 0;
+    [...answersDiv.children].forEach(btn => {
+      if(btn.dataset.letter !== correct && removed < 2) {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        removed++;
+      }
+    });
+  };
+
+  lifelinePhoneBtn.onclick = () => {
+    if(usedPhone) return;
+    usedPhone = true;
+    lifelinePhoneBtn.classList.add('used');
+    phoneHintDiv.style.display = 'block';
+    // Phone friend gives 80% chance correct answer, else random wrong
+    const correct = questions[current].answer;
+    if(Math.random() < 0.8) {
+      phoneHintDiv.textContent = `Your friend thinks the answer is ${correct}`;
+    } else {
+      const letters = ['A','B','C','D'].filter(l => l !== correct);
+      const randomWrong = letters[Math.floor(Math.random()*letters.length)];
+      phoneHintDiv.textContent = `Your friend thinks the answer is ${randomWrong}`;
+    }
+  };
+
+    lifelineAudienceBtn.onclick = () => {
+        if (usedAudience) return;
+        usedAudience = true;
+        lifelineAudienceBtn.classList.add('used');
+        audienceHintDiv.style.display = 'block';
+
+        const correct = questions[current].answer;  // e.g., 'B'
+
+        let correctPercent = 26 + Math.floor(Math.random() * 20); // 50-70%
+        let remaining = 100 - correctPercent;
+        const others = ['A', 'B', 'C', 'D'].filter(l => l !== correct);
+
+        // Random distribution for others
+        let distribution = others.map(() => Math.floor(Math.random() * remaining));
+        const sumDist = distribution.reduce((a, b) => a + b, 0);
+
+        // Normalize to sum to remaining
+        let normalized = distribution.map(x => Math.floor(x * remaining / sumDist));
+
+        // Adjust for rounding errors
+        let totalOthers = normalized.reduce((a, b) => a + b, 0);
+        normalized[0] += remaining - totalOthers;
+
+        // Map each other letter to its percentage for easy lookup
+        const othersPercentMap = {};
+        others.forEach((letter, i) => {
+            othersPercentMap[letter] = normalized[i];
+        });
+
+        audienceHintDiv.innerHTML = '';
+
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.justifyContent = 'space-around';
+        container.style.alignItems = 'flex-end';
+        container.style.height = '150px';
+        container.style.border = '1px solid #ccc';
+        container.style.padding = '10px';
+        container.style.background = '#f9f9f9';
+
+        function createBar(label, percent) {
+            const barWrapper = document.createElement('div');
+            barWrapper.style.textAlign = 'center';
+            barWrapper.style.width = '20%';
+
+            const bar = document.createElement('div');
+            bar.style.height = `${percent * 1.5}px`;
+            bar.style.width = '40px';
+            bar.style.margin = '0 auto 5px auto';
+            bar.style.backgroundColor = '#2196F3'; // same blue for all
+            bar.style.borderRadius = '5px';
+            bar.style.transition = 'height 0.5s ease';
+
+            const labelPercent = document.createElement('div');
+            labelPercent.textContent = `${percent}%`;
+            labelPercent.style.fontWeight = 'bold';
+            labelPercent.style.marginBottom = '4px';
+
+            const labelLetter = document.createElement('div');
+            labelLetter.textContent = label;
+            labelLetter.style.fontWeight = 'bold';
+
+            barWrapper.appendChild(labelPercent);
+            barWrapper.appendChild(bar);
+            barWrapper.appendChild(labelLetter);
+
+            return barWrapper;
+        }
+
+        // Create bars in fixed order A, B, C, D
+        ['A', 'B', 'C', 'D'].forEach(letter => {
+            if (letter === correct) {
+                container.appendChild(createBar(letter, correctPercent));
+            } else {
+                container.appendChild(createBar(letter, othersPercentMap[letter]));
+            }
+        });
+
+        audienceHintDiv.appendChild(container);
+    };
+
+
+
+
+  // Start screen click handler
+  startScreen.onclick = () => {
+    startScreen.style.display = 'none';
+    playScreen.style.display = 'block';
+    initPrizeLadder();
+    renderQuestion();
+  };
+
+  // End screen keyboard handler
+  document.addEventListener('keydown', e => {
+    if(endScreen.style.display === 'block') {
+      if(e.key.toLowerCase() === 'r') {
+        resetGame();
+      } else if(e.key.toLowerCase() === 'q') {
+        window.close();
+      }
+    }
+  });
+</script>
+</body>
+</html>

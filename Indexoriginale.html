@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Who Wants to Be a Millionaire – Kids Edition</title>
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: url('images/game-background.jpg') no-repeat center center;
+      background-size: cover;
+      color: white;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    #bottom-left-image {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 320px;
+      height: auto;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1000;
+    }
+
+    #game-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .lifelines {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .lifeline-btn {
+      background: #3296ff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 18px;
+      color: black;
+      cursor: pointer;
+    }
+
+    .lifeline-btn.used {
+      background: #888;
+      color: #555;
+      cursor: not-allowed;
+    }
+
+    #play-area {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 900px;
+    }
+
+    .question-box {
+      background: rgba(0, 50, 255, 0.9);
+      border: 4px solid orange;
+      padding: 20px;
+      font-size: 24px;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .answer-btn {
+      background: #3296ff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      font-size: 20px;
+      color: black;
+      cursor: pointer;
+    }
+
+    .answer-btn.disabled {
+      background: #ccc;
+      color: #888;
+      cursor: not-allowed;
+    }
+
+    .answer-btn:hover:not(.disabled) {
+      background: yellow;
+    }
+
+    .feedback, .phone-hint, .audience-hint {
+      font-size: 28px;
+      padding: 10px;
+      margin-top: 20px;
+      background: white;
+      color: black;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .feedback.correct { color: #00c000; }
+    .feedback.wrong { color: #c00000; }
+
+    #start-screen, #end-screen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    #prize-display {
+      font-size: 22px;
+      color: yellow;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+    <img id="bottom-left-image" src="images/Gemini_Generated_Image_gj5gt3gj5gt3gj5g-removebg-preview.png" alt="Mascot" />
+
+  <div id="game-container">
+    <div id="start-screen">
+      <h1 style="font-size:48px;color:orange;">Who Wants to Be a Millionaire!</h1>
+      <p style="font-size:28px;color:red;">Click anywhere to start</p>
+    </div>
+
+    <div id="play-screen" style="display:none;">
+      <div class="lifelines">
+        <button id="lifeline-5050" class="lifeline-btn">50:50</button>
+        <button id="lifeline-phone" class="lifeline-btn">Phone a Friend</button>
+        <button id="lifeline-audience" class="lifeline-btn">Ask the Audience</button>
+      </div>
+
+      <div id="play-area">
+        <div class="question-box" id="question-box"></div>
+        <div class="answers" id="answers"></div>
+        <div class="phone-hint" id="phone-hint"></div>
+        <div class="audience-hint" id="audience-hint"></div>
+        <div class="feedback" id="feedback"></div>
+        <div id="prize-display"></div>
+      </div>
+    </div>
+
+    <div id="end-screen" style="display:none;">
+      <h1 class="feedback correct" id="end-text"></h1>
+      <p style="font-size:28px;color:orange;">Press R to Play Again or Q to Quit</p>
+    </div>
+  </div>
+
+
+
+
+
+  <script>
+    const questions = [
+      {question: "Ποιος είναι ο όρος που περιγράφει τη μελέτη μικρών σωματιδίων στη φαρμακευτική τεχνολογία;", choices: ["Φαρμακοκινητική", "Ρευστομηχανική", "Μικρομερητική", "Φυσικοχημεία"], answer: "C"},
+      {question: "Ποια είναι η βασική ιδιότητα των πολύ λεπτών κόνεων σε σχέση με τη ροή;", choices: ["Ρέουν όπως υγρά", "Διαλύονται εύκολα", "Σχηματίζουν αλυσίδες", "Έχουν χαμηλή απορρόφηση"], answer: "C"},
+      {question: "Ποια διάμετρος αντιπροσωπεύει τη σχέση όγκου προς επιφάνεια ενός σωματιδίου;", choices: ["Προβαλλόμενη διάμετρος", "Διάμετρος όγκου", "Διάμετρος επιφανείας", "Διάμετρος όγκου-επιφανείας"], answer: "D"},
+      {question: "Η μέθοδος των αναλυτικών κόσκινων εφαρμόζεται για σωματίδια μεγέθους:", choices: ["0.1 - 50 μm", "50 - 1000 μm", "1000 - 5000 μm", "0.001 - 0.1 μm"], answer: "B"},
+      {question: "Σύμφωνα με τον Νόμο του Stokes, ποιος παράγοντας δεν επηρεάζει την ταχύτητα καθίζησης;", choices: ["Πυκνότητα σωματιδίου", "Πυκνότητα υγρού", "Επιφάνεια σωματιδίου", "Ιξώδες υγρού"], answer: "C"},
+      {question: "Ποια μέθοδος χρησιμοποιείται για την εύρεση του πραγματικού όγκου των σωματιδίων;", choices: ["Μικροσκόπηση", "Καθίζηση", "Εκτόπιση υγρού", "Εκτόπιση αερίου"], answer: "D"},
+      {question: "Το πορώδες με τι συνδέεται άμεσα;", choices: ["Με την ειδική επιφάνεια", "Με την ταχύτητα διάλυσης", "Με την ολική πυκνότητα", "Με την ηλεκτρική αγωγιμότητα"], answer: "C"},
+      {question: "Ποια είναι η πυκνότητα της κόνεως που υπολογίζεται μόνο με βάση τη μάζα και τον πραγματικό όγκο των σωματιδίων;", choices: ["Ολική πυκνότητα", "Πυκνότητα σωματιδίων", "Πραγματική πυκνότητα", "Ειδική πυκνότητα"], answer: "C"},
+      {question: "Ποια διάταξη έχει το μικρότερο θεωρητικό πορώδες σε σφαιρικά σωματίδια;", choices: ["Ανοικτή κυβική", "Κλειστή ρομβοεδρική", "Τυχαία κατανομή", "Σπειροειδής διάταξη"], answer: "B"},
+      {question: "Η ικανότητα διασποράς και διάλυσης αυξάνεται όταν:", choices: ["Το μέγεθος των σωματιδίων αυξάνεται", "Η επιφάνεια επαφής μειώνεται", "Το μέγεθος μειώνεται", "Τα σωματίδια είναι άμορφα"], answer: "C"},
+      {question: "Για να επιτευχθεί τέλεια ανάμιξη απαιτείται:", choices: ["Ισομεγέθη σωματίδια", "Μεγάλη διαφορά πυκνότητας", "Συνεχής θέρμανση", "Διαδοχική συμπίεση"], answer: "A"},
+      {question: "Η μείωση του μεγέθους σωματιδίων αυξάνει:", choices: ["Τη ροή", "Το πορώδες", "Τη δράση van der Waals", "Τη διάχυση θερμότητας"], answer: "C"},
+      {question: "Ποιο φαινόμενο παρατηρείται όταν αναμιγνύονται κόνεων με μεγάλες διαφορές μεγέθους σωματιδίων;", choices: ["Αύξηση πίεσης", "Ομοιομορφία μίγματος", "Διαχωρισμός στρωμάτων", "Αναστροφή ανάμιξης"], answer: "C"},
+      {question: "Η λειοτρίβηση επιτυγχάνει:", choices: ["Αύξηση σκληρότητας", "Αύξηση μεγέθους", "Μείωση μεγέθους", "Αλλαγή πυκνότητας"], answer: "C"},
+      {question: "Ποια κατηγορία κόνεως περιλαμβάνει σωματίδια μικρότερα από 74 μm;", choices: ["Αδρομερείς", "Ενδιάμεσες", "Λεπτές", "Χονδροειδείς"], answer: "C"}
+    ];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const prizes = ["$100","$200","$300","$500","$1,000","$2,000","$4,000","$8,000","$16,000","$32,000","$64,000","$125,000","$250,000","$500,000","$1,000,000"];
+
+    let current = 0, score = 0;
+    let used5050 = false, usedPhone = false, usedAudience = false;
+
+    const startScreen = document.getElementById('start-screen');
+    const playScreen = document.getElementById('play-screen');
+    const endScreen = document.getElementById('end-screen');
+    const questionBox = document.getElementById('question-box');
+    const answersDiv = document.getElementById('answers');
+    const prizeDisplay = document.getElementById('prize-display');
+    const feedbackDiv = document.getElementById('feedback');
+    const phoneHintDiv = document.getElementById('phone-hint');
+    const audienceHintDiv = document.getElementById('audience-hint');
+    const endText = document.getElementById('end-text');
+
+    startScreen.onclick = () => {
+      startScreen.style.display = 'none';
+      playScreen.style.display = 'block';
+      renderQuestion();
+    };
+
+    function renderQuestion(){
+      const q = questions[current];
+      questionBox.textContent = q.question;
+      prizeDisplay.textContent = prizes[current];
+      answersDiv.innerHTML = '';
+      ['A','B','C','D'].forEach((letter,i)=>{
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.textContent = `${letter}: ${q.choices[i]}`;
+        btn.dataset.letter = letter;
+        btn.disabled = false;
+        btn.classList.remove('disabled');
+        btn.onclick = () => selectAnswer(btn);
+        answersDiv.appendChild(btn);
+      });
+      phoneHintDiv.style.display = 'none';
+      phoneHintDiv.textContent = '';
+      audienceHintDiv.style.display = 'none';
+      audienceHintDiv.textContent = '';
+      feedbackDiv.style.display = 'none';
+      feedbackDiv.textContent = '';
+    }
+
+    function selectAnswer(btn){
+      if(feedbackDiv.style.display==='block') return;
+      const letter = btn.dataset.letter;
+      const correct = questions[current].answer;
+      if(letter === correct){
+        feedbackDiv.textContent = 'Correct!';
+        feedbackDiv.className = 'feedback correct';
+        score = prizes[current];
+      } else {
+        feedbackDiv.textContent = `Wrong! The correct answer was ${correct}`;
+        feedbackDiv.className = 'feedback wrong';
+      }
+      feedbackDiv.style.display = 'block';
+
+      // Disable all answer buttons to prevent multiple clicks
+      [...answersDiv.children].forEach(b => b.disabled = true);
+
+      setTimeout(() => {
+        if(letter === correct){
+          current++;
+          if(current >= questions.length){
+            endGame(true);
+          } else {
+            renderQuestion();
+          }
+        } else {
+          endGame(false);
+        }
+      }, 1500);
+    }
+
+    function endGame(won){
+      playScreen.style.display = 'none';
+      endScreen.style.display = 'block';
+      endText.textContent = won
+        ? `Congratulations! You won ${score}!`
+        : `Game Over! You won ${score}.`;
+    }
+
+    document.addEventListener('keydown', e => {
+      if(endScreen.style.display==='block'){
+        if(e.key.toLowerCase()==='r') resetGame();
+        else if(e.key.toLowerCase()==='q') window.close();
+      }
+    });
+
+    function resetGame(){
+      current=0; score=0;
+      used5050=usedPhone=usedAudience=false;
+      document.getElementById('lifeline-5050').classList.remove('used');
+      document.getElementById('lifeline-phone').classList.remove('used');
+      document.getElementById('lifeline-audience').classList.remove('used');
+      endScreen.style.display = 'none';
+      playScreen.style.display = 'block';
+      renderQuestion();
+    }
+
+    // 50:50 lifeline (your existing code)
+    document.getElementById('lifeline-5050').onclick = () => {
+    if (used5050) return;  // Prevent multiple uses
+    used5050 = true;
+    const lifelineBtn = document.getElementById('lifeline-5050');
+    lifelineBtn.classList.add('used');
+    lifelineBtn.disabled = true; // Also disable the button itself
+
+    const correct = questions[current].answer;
+    // Get all wrong answer buttons
+    const wrongButtons = [...answersDiv.children].filter(btn => btn.dataset.letter !== correct && !btn.disabled);
+
+    // Shuffle the wrong answers
+    shuffle(wrongButtons);
+
+    // Disable two wrong answers visually and functionally
+    wrongButtons.slice(0, 2).forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('disabled');
+        btn.onclick = null;  // Remove onclick handler to prevent clicks
+    });
+    };
+
+
+    // Phone a Friend lifeline
+    document.getElementById('lifeline-phone').onclick = () => {
+      if(usedPhone) return;
+      usedPhone = true;
+      document.getElementById('lifeline-phone').classList.add('used');
+      phoneHintDiv.style.display = 'block';
+
+      // The friend is 80% likely to suggest the correct answer
+      const correct = questions[current].answer;
+      const letters = ['A','B','C','D'];
+      let friendAnswer;
+      if(Math.random() < 0.8){
+        friendAnswer = correct;
+      } else {
+        // Suggest a wrong answer randomly
+        const wrongChoices = letters.filter(l => l !== correct);
+        friendAnswer = wrongChoices[Math.floor(Math.random()*wrongChoices.length)];
+      }
+      const answerText = questions[current].choices[letters.indexOf(friendAnswer)];
+      phoneHintDiv.textContent = `Your friend thinks the answer is: ${friendAnswer}: ${answerText}`;
+    };
+
+    // Ask the Audience lifeline
+    document.getElementById('lifeline-audience').onclick = () => {
+    if(usedAudience) return;
+    usedAudience = true;
+    const btn = document.getElementById('lifeline-audience');
+    btn.classList.add('used');
+
+    // Prepare the audience hint div for canvas
+    audienceHintDiv.style.display = 'block';
+    audienceHintDiv.textContent = ''; // clear old text
+
+    // Create canvas or reuse existing one
+    let canvas = document.getElementById('audience-pie');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.id = 'audience-pie';
+        canvas.width = 300;
+        canvas.height = 300;
+        audienceHintDiv.appendChild(canvas);
+    }
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const correct = questions[current].answer;
+    const letters = ['A','B','C','D'];
+
+    // The correct answer gets at least 15%
+    // So first pick correctVotes from 15% up to 80%
+    let correctVotes = 15 + Math.floor(Math.random() * (66)); // 15-80%
+    let remaining = 100 - correctVotes;
+
+    let votes = [0, 0, 0, 0];
+    votes[letters.indexOf(correct)] = correctVotes;
+
+    let wrongIndices = letters.filter(l => l !== correct).map(l => letters.indexOf(l));
+
+    // Distribute remaining votes randomly among wrong answers
+    for(let i=0; i < wrongIndices.length; i++){
+        if(i === wrongIndices.length - 1){
+        votes[wrongIndices[i]] = remaining;
+        } else {
+        let v = Math.floor(Math.random() * (remaining + 1));
+        votes[wrongIndices[i]] = v;
+        remaining -= v;
+        }
+    }
+
+    // Colors for slices
+    const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0'];
+
+    // Draw pie chart
+    let startAngle = 0;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 20;
+
+    for(let i=0; i < votes.length; i++){
+        const sliceAngle = (votes[i] / 100) * 2 * Math.PI;
+
+        // Draw slice
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+
+        // Draw label
+        const midAngle = startAngle + sliceAngle / 2;
+        const labelX = centerX + (radius / 1.5) * Math.cos(midAngle);
+        const labelY = centerY + (radius / 1.5) * Math.sin(midAngle);
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const letter = letters[i];
+        const choiceText = questions[current].choices[i];
+        const percent = votes[i];
+
+        ctx.fillText(`${letter}: ${percent}%`, labelX, labelY);
+
+        startAngle += sliceAngle;
+    }
+    };
+
+
+
+    function shuffle(a){
+      for(let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+    }
+  </script>
+</body>
+</html>
